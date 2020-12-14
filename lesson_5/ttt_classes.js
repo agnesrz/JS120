@@ -100,7 +100,7 @@ class Computer {
 
   selectMove(choicesObj) {
     let options = Object.entries(choicesObj).filter(element => element[1] === " ");
-    let randomIndex = Math.floor(Math.random() * options.length);
+    let randomIndex = Math.floor(Math.random() * options.length + 1);
 
     return options[randomIndex][0];
   }
