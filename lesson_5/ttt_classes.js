@@ -1,5 +1,5 @@
+/////////////////////////// My first attempt (NOT THE WALKTHROUGH)
 let readline = require('readline-sync');
-
 
 class Board {
   constructor() {
