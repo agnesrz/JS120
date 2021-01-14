@@ -43,12 +43,14 @@ function createComputer() {
       this.move = choice;
     },
     getChoicesBasedOnStrategy(rulesObj) {
-      // This method removes moves that have historically resulted in a loss from the pool of possible choices
+      // This method removes moves that have historically
+      // resulted in a loss from the pool of possible choices
       let choices = Object.values(rulesObj.moveOptions);
       let removeFromChoices = [];
 
       for (let move in this.moveHistory) {
-        if ((this.moveHistory[move].playedAndLost / this.moveHistory[move].played) >= .60) {
+        if ((this.moveHistory[move].playedAndLost /
+             this.moveHistory[move].played) >= .60) {
           removeFromChoices.push(move);
         }
       }
@@ -72,13 +74,16 @@ function createRules() {
       sp: 'spock',
     },
     winningCombos: {
-      // The move represented by the key wins against the move(s) listed in the associated array
+      // The move represented by the key wins against the move(s)
+      // listed in the associated array
       rock: ['scissors', 'lizard'],
       paper: ['rock', 'spock'],
       scissors: ['paper', 'lizard'],
       lizard: ['spock', 'paper'],
       spock: ['scissors', 'rock'],
     },
+    playOneGame: false,// if true, set playMultipleGames to false
+    playMultipleGames: true,// if true, set playOneGame to false, and POINTS_NEEDED_TO_WIN to a value greater than 0
     POINTS_NEEDED_TO_WIN: 5,
 
     displayMoveOptionsWithAbbreviations() {
@@ -95,7 +100,8 @@ function createRules() {
       return this.moveOptionsThatAreProperNouns.includes(move);
     },
     capitalizeIfMoveIsProperNoun(move) {
-      return this.moveIsProperNoun(move) ? this.capitalizeFirstLetter(move) : move;
+      return this.moveIsProperNoun(move) ?
+        this.capitalizeFirstLetter(move) : move;
     }
   };
 
@@ -116,62 +122,8 @@ function createTextProcessingMethods() {
   };
 }
 
-function createRPSGame() {
-  let game = {
-    human: createHuman(),
-    computer: createComputer(),
-    rules: createRules(),
-
-    play() {
-      this.displayGreeting();
-      this.setUpGame();
-      while (true) {
-        this.multipleRounds() ? this.playMultipleRounds() : this.playOneGame();
-        if (this.stopPlaying()) break;
-        this.resetGame();
-      }
-      this.displayGoodbyeMessage();
-    },
-    playOneGame() {
-      this.human.chooseMove(this.rules);
-      this.computer.chooseMove(this.rules);
-      this.computer.updateMoveHistory(this.getRoundWinner());
-      this.displayMoves();
-      this.displayGameResult(this.getRoundWinner());
-    },
-    playMultipleRounds() {
-      this.displayRoundInfo();
-      while (!this.gameWinner()) {
-        this.human.chooseMove(this.rules);
-        this.computer.chooseMove(this.rules);
-        this.updateRoundData();
-        this.displayRoundResult();
-      }
-      this.displayGameResult();
-    },
-    setUpGame() {
-      this.setUpMoveHistory();
-    },
-    setUpMoveHistory() {
-      let moveHistoryObj = {};
-      let moveOptions = this.rules.moveOptions;
-
-      moveOptions.forEach(move => {
-        moveHistoryObj[move] = {};
-        moveHistoryObj[move].played = 0;
-        // The above property stores the number of times the computer played this move
-        moveHistoryObj[move].playedAndLost = 0;
-        // The above property stores the number of times the computer played this move and lost the round
-      });
-
-      this.computer.moveHistory = moveHistoryObj;
-    },
-    multipleRounds() {
-      return this.rules.POINTS_NEEDED_TO_WIN;
-    },
-    getNameOfGame() {
-      return this.rules.moveOptions.map(element => this.capitalizeFirstLetter(element)).join(', ');
-    },
+function createDisplayMethods() {
+  return {
     displayGreeting() {
       console.log(`Welcome to ${this.getNameOfGame()}!`);
     },
@@ -187,39 +139,115 @@ function createRPSGame() {
     },
     displayMoves() {
       let humanMove = this.rules.capitalizeIfMoveIsProperNoun(this.human.move);
-      let computerMove = this.rules.capitalizeIfMoveIsProperNoun(this.computer.move);
+      let computerMove = this.rules
+        .capitalizeIfMoveIsProperNoun(this.computer.move);
 
       console.log(`You chose ${humanMove}. The computer chose ${computerMove}.`);
     },
     displayRoundResult() {
       let winner = this.getRoundWinner();
       this.displayMoves();
-      this.displayWinner(winner, 'round');
+      this.displayRoundWinner(winner);
       this.displayScore();
       this.continueWithClear();
     },
-    displayGameResult(winner = this.getGameWinner()) {
-      this.displayWinner(winner, 'game');
+    displayGameResult(winner) {
+      this.displayGameWinner(winner);
     },
-    displayWinner(winner, gameOrRound) {
-      let phrasing = gameOrRound === 'round' ? 'this round' : 'the game';
+    displayRoundWinner(winner) {
       switch (winner) {
         case 'human':
-          console.log(`You win ${phrasing}!`);
+          console.log(`You win this round!`);
           break;
         case 'computer':
-          console.log(`The computer wins ${phrasing}!`);
+          console.log(`The computer wins this round!`);
           break;
         default:
           console.log("It's a tie!");
       }
+    },
+    displayGameWinner(winner) {
+      switch (winner) {
+        case 'human':
+          console.log(`You win the game!`);
+          break;
+        case 'computer':
+          console.log(`The computer wins the game!`);
+      }
+    }
+  };
+}
+
+function createRPSGame() {
+  let game = {
+    human: createHuman(),
+    computer: createComputer(),
+    rules: createRules(),
+
+    play() {
+      this.displayGreeting();
+      this.setUpGame();
+      while (true) {
+        if (this.rules.playOneGame) {
+          this.playOneGame();
+        } else {
+          this.playMultipleRounds();
+        }
+
+        if (this.stopPlaying()) break;
+        this.resetGame();
+      }
+      this.displayGoodbyeMessage();
+    },
+    playOneGame() {
+      this.human.chooseMove(this.rules);
+      this.computer.chooseMove(this.rules);
+      let winner = this.getRoundWinner();
+      this.computer.updateMoveHistory(winner);
+      this.displayMoves();
+      this.displayGameResult(winner);
+    },
+    playMultipleRounds() {
+      this.displayRoundInfo();
+      while (!this.gameWinner()) {
+        this.human.chooseMove(this.rules);
+        this.computer.chooseMove(this.rules);
+        this.updateRoundData();
+        this.displayRoundResult();
+      }
+      this.displayGameResult(this.getGameWinner());
+    },
+    setUpGame() {
+      this.setUpMoveHistory();
+    },
+    setUpMoveHistory() {
+      let moveHistoryObj = {};
+      let moveOptions = this.rules.moveOptions;
+
+      moveOptions.forEach(move => {
+        moveHistoryObj[move] = {};
+        moveHistoryObj[move].played = 0;
+        // The above property stores the number of times the computer played
+        // this move
+        moveHistoryObj[move].playedAndLost = 0;
+        // The above property stores the number of times the computer played
+        // this move and lost the round
+      });
+
+      this.computer.moveHistory = moveHistoryObj;
+    },
+    getNameOfGame() {
+      return this.rules.moveOptions.map(element => this
+        .capitalizeFirstLetter(element))
+        .join(', ');
     },
     gameWinner() {
       return (this.human.points === this.rules.POINTS_NEEDED_TO_WIN) ||
              (this.computer.points === this.rules.POINTS_NEEDED_TO_WIN);
     },
     getGameWinner() {
-      return this.human.points === this.rules.POINTS_NEEDED_TO_WIN ? 'human' : 'computer';
+      return this.human.points === this.rules.POINTS_NEEDED_TO_WIN ?
+        'human' : 'computer';
     },
     getRoundWinner() {
       let humanMove = this.human.move.toLowerCase();
@@ -269,7 +297,8 @@ function createRPSGame() {
     }
   };
 
-  return Object.assign(game, createTextProcessingMethods());
+  return Object.assign(game, createTextProcessingMethods(),
+    createDisplayMethods());
 }
 
 let game = createRPSGame();
