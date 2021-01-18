@@ -29,6 +29,10 @@ Square.COMPUTER_MARKER = "O";
 class Board {
   constructor() {
     this.squares = {};
+    this.resetBoard();
+  }
+
+  resetBoard() {
     for (let counter = 1; counter <= 9; ++counter) {
       this.squares[String(counter)] = new Square();
     }
@@ -71,17 +75,15 @@ class Board {
     return markers.length;
   }
 
-  getPlayedMoves(player) {
-    let playerMarker = player === 'human' ? Square.HUMAN_MARKER :
-      Square.COMPUTER_MARKER;
-    let playerMoves = [];
+  getPlayedMoves(playersMarker) {
+    let playedMoves = [];
 
     for (let key in this.squares) {
-      if (this.squares[key].getMarker() === playerMarker) {
-        playerMoves.push(key);
+      if (this.squares[key].getMarker() === playersMarker) {
+        playedMoves.push(key);
       }
     }
-    return playerMoves;
+    return playedMoves;
   }
 
   displayWithClear() {
@@ -104,7 +106,7 @@ class Score {
     return score === Score.WINNING_SCORE;
   }
 
-  displayScoreInfo() {
+  display() {
     console.log(`Your Score: ${this.humanScore}`);
     console.log(`Computer Score: ${this.computerScore}`);
   }
@@ -155,37 +157,37 @@ class TTTGame {
   play() {
     let player1 = this.human;
     let player2 = this.computer;
-    
+
     this.displayWelcomeMessage();
 
     while (true) {
-      this.score.displayScoreInfo();
-      this.playOneGame(player1, player2);
+      this.playRound(player1, player2);
+      this.score.display();
+      this.continueAndClear();
 
       if (this.gameOver()) break;
-      this.board = new Board();
-      this.reassignPlayers();
+
+      this.board.resetBoard();
+      [player1, player2] = [player2, player1];
     }
 
     this.displayGameResult();
     this.displayGoodbyeMessage();
   }
 
-  playOneGame() {
-    
+  playRound(firstPlayer, secondPlayer) {
     this.board.display();
 
     while (true) {
-      this.humanMoves();
-      if (this.roundOver()) break;
-
-      this.computerMoves();
-      if (this.roundOver()) break;
-
+      this.move(firstPlayer);
       this.board.displayWithClear();
+      if (this.roundOver()) break;
+
+      this.move(secondPlayer);
+      this.board.displayWithClear();
+      if (this.roundOver()) break;
     }
 
-    this.board.displayWithClear();
     this.displayRoundResult();
     this.score.updateScore(this.getRoundWinner());
   }
@@ -204,22 +206,30 @@ class TTTGame {
 
   displayRoundResult() {
     if (this.isRoundWinner(this.human)) {
-      console.log("You won this round!");
+      console.log("You won this round!\n");
     } else if (this.isRoundWinner(this.computer)) {
-      console.log("I won this round! He he he...");
+      console.log("I won this round! Bu-ha-ha...\n");
     } else {
-      console.log("A tie game. How boring.");
+      console.log("A tie game. How boring.\n");
     }
   }
 
   displayGameResult() {
-    console.log();
+    console.clear();
     if (this.score.isWinningScore(this.score.humanScore)) {
       console.log("You won the game! Congratulations!");
     } else {
       console.log("I won! I won! Take that, human! It's game over for you!");
     }
     console.log();
+  }
+
+  move(player) {
+    if (player.constructor === Human) {
+      this.humanMoves();
+    } else {
+      this.computerMoves();
+    }
   }
 
   humanMoves() {
@@ -243,8 +253,19 @@ class TTTGame {
     let choices = this.getMoveOptions();
     let choice = choices.length === 1 ? choices[0] :
       this.chooseRandomSquare(choices);
-
     this.board.markSquareAt(choice, this.computer.getMarker());
+  }
+
+  getMoveOptions() {
+    if (this.winImminent(Square.COMPUTER_MARKER)) {
+      return this.getOffensiveMoves();
+    } else if (this.winImminent(Square.HUMAN_MARKER)) {
+      return this.getDefensiveMoves();
+    } else if (this.board.squares[Board.CENTER_SQUARE].isUnused()) {
+      return Array(Board.CENTER_SQUARE);
+    } else {
+      return this.board.unusedSquares();
+    }
   }
 
   chooseRandomSquare(choices) {
@@ -257,21 +278,9 @@ class TTTGame {
     return choice;
   }
 
-  getMoveOptions() {
-    if (this.winImminent('computer')) {
-      return this.getOffensiveMoves();
-    } else if (this.winImminent('human')) {
-      return this.getDefensiveMoves();
-    } else if (this.board.squares[Board.CENTER_SQUARE].isUnused()) {
-      return Array(Board.CENTER_SQUARE);
-    } else {
-      return this.board.unusedSquares();
-    }
-  }
-
-  winImminent(player) {
+  winImminent(playerMarker) {
     let validMoves = this.board.unusedSquares();
-    let playedMoves = this.board.getPlayedMoves(player);
+    let playedMoves = this.board.getPlayedMoves(playerMarker);
 
     if (playedMoves.length < 2) return false;
 
@@ -289,21 +298,16 @@ class TTTGame {
   }
 
   getDefensiveMoves() {
-    return this.getStrategicMoves('defensive');
+    return this.getStrategicMoves(Square.HUMAN_MARKER);
   }
 
   getOffensiveMoves() {
-    return this.getStrategicMoves('offensive');
+    return this.getStrategicMoves(Square.COMPUTER_MARKER);
   }
 
-  getStrategicMoves(strategy) {
-    // Accepts 'defensive' or 'offensive' as arguments.
-    // Entering 'defensive' returns moves that result in a win.
-    // Entering 'offensive' returns moves that prevent the human from win.
+  getStrategicMoves(marker) {
     let validMoves = this.board.unusedSquares();
-    let playedMoves = strategy === 'defensive' ?
-      this.board.getPlayedMoves('human') :
-      this.board.getPlayedMoves('computer');
+    let playedMoves = this.board.getPlayedMoves(marker);
 
     return validMoves.filter(move => {
       let futureMoves = playedMoves.concat(Array(move));
@@ -325,7 +329,7 @@ class TTTGame {
     return this.isRoundWinner(this.human) || this.isRoundWinner(this.computer);
   }
 
-  getRoundWinner() {
+  getRoundWinner() {////////////////////////////////////////////////////////////////HERE
     if (this.isRoundWinner(this.human)) {
       return 'human';
     } else if (this.isRoundWinner(this.computer)) {
@@ -340,10 +344,17 @@ class TTTGame {
       return this.board.countMarkersFor(player, row) === 3;
     });
   }
-    
-  reassignPlayers(firstPlayer, secondPlayer) {
-    player1 = secondPlayer;
-    player2 = firstPlayer;
+
+  swapPlayerOrder() {
+    let [firstPlayer, secondPlayer] = [this.player1, this.player2];
+
+    this.player1 = secondPlayer;
+    this.player2 = firstPlayer;
+  }
+
+  continueAndClear() {
+    readline.question('\nPress any key to continue.');
+    console.clear();
   }
   /*
   playAgain() {
