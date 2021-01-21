@@ -6,7 +6,7 @@ class Card {
     this.value = value;
     this.numericalValue = null;
 
-    if (Card.FACE_CARDS.includes(value)) {
+    if (Deck.FACE_CARDS.includes(value)) {
       this.numericalValue = 10;
     } else if (value === 'Ace') {
       this.numericalValue = 11;
@@ -65,6 +65,10 @@ class Deck {
   }
 }
 
+Deck.SUITS = ['Spades', 'Clovers', 'Hearts', 'Diamonds'];
+Deck.VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+Deck.FACE_CARDS = ['Jack', 'Queen', 'King'];
+
 class Participant {
   constructor() {
     this.hand = null;
@@ -105,10 +109,6 @@ class Player extends Participant {
     return this.getScore();
   }
 }
-
-Deck.SUITS = ['Spades', 'Clovers', 'Hearts', 'Diamonds'];
-Deck.VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-Deck.FACE_CARDS = ['Jack', 'Queen', 'King'];
 
 class Dealer extends Participant {
   constructor() {
