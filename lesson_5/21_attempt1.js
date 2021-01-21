@@ -6,7 +6,7 @@ class Card {
     this.value = value;
     this.numericalValue = null;
 
-    if (['Jack', 'Queen', 'King'].includes(value)) {
+    if (Card.FACE_CARDS.includes(value)) {
       this.numericalValue = 10;
     } else if (value === 'Ace') {
       this.numericalValue = 11;
@@ -19,12 +19,9 @@ class Card {
 class Deck {
   constructor() {
     let fullDeck = [];
-    let suits = ['spades', 'clovers', 'hearts', 'diamonds'];
 
-    suits.forEach(suit => {
-      let values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-
-      values.forEach(value => {
+    Deck.SUITS.forEach(suit => {
+      Deck.VALUES.forEach(value => {
         fullDeck.push(new Card(suit, value));
       });
     });
@@ -96,6 +93,10 @@ class Player extends Participant {
     console.log(`Your current balance is $${this.balance}.\n`);
   }
 
+  resetBalance() {
+    this.balance = TwentyOneGame.STARTING_BALANCE;
+  }
+
   getHandAsString() {
     return this.getCardsAsString();
   }
@@ -103,20 +104,28 @@ class Player extends Participant {
   getTotal() {
     return this.getScore();
   }
-
-  resetBalance() {
-    this.balance = TwentyOneGame.STARTING_BALANCE;
-  }
 }
+
+Deck.SUITS = ['Spades', 'Clovers', 'Hearts', 'Diamonds'];
+Deck.VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+Deck.FACE_CARDS = ['Jack', 'Queen', 'King'];
 
 class Dealer extends Participant {
   constructor() {
     super();
-    this.hideCard = true;
+    this.keepOneCardFaceDown = true;
+  }
+
+  hideCard() {
+    this.keepOneCardFaceDown = true;
+  }
+
+  unhideCard() {
+    this.keepOneCardFaceDown = false;
   }
 
   getHandAsString() {
-    return this.hideCard ? this.getFirstCardAsString() + ', [hidden]' :
+    return this.keepOneCardFaceDown ? this.getFirstCardAsString() + ', [hidden]' :
       this.getCardsAsString();
   }
 
@@ -125,7 +134,7 @@ class Dealer extends Participant {
   }
 
   getTotal() {
-    return this.hideCard ? this.hand[0].numericalValue : this.getScore();
+    return this.keepOneCardFaceDown ? this.hand[0].numericalValue : this.getScore();
   }
 
   hit() {
@@ -144,6 +153,7 @@ class TwentyOneGame {
     this.displayWelcomeMessage();
 
     while (true) {
+      this.prepareNewDeck();
       this.playGame();
       if (!this.keepPlaying()) break;
       this.player.resetBalance();
@@ -154,10 +164,10 @@ class TwentyOneGame {
   }
 
   playGame() {
-    this.prepareNewDeck();
-
     while (true) {
+      this.player.displayBalance();
       this.playRound();
+      this.updateBalance();
       if (this.gameOver()) break;
       this.prepareForNextRound();
     }
@@ -166,7 +176,6 @@ class TwentyOneGame {
   }
 
   playRound() {
-    this.player.displayBalance();
     this.dealCards();
     this.playerTurn();
 
@@ -175,7 +184,6 @@ class TwentyOneGame {
     }
 
     this.displayRoundResult();
-    this.updateBalance();
   }
 
   prepareNewDeck() {
@@ -193,7 +201,7 @@ class TwentyOneGame {
   }
 
   prepareForNextRound() {
-    this.dealer.hideCard = 'true';
+    this.dealer.hideCard();
     this.prepareCards();
   }
 
@@ -226,7 +234,7 @@ class TwentyOneGame {
 
     while (true) {
       if (this.player.isBusted()) {
-        this.dealer.hideCard = false;
+        this.dealer.unhideCard();
         break;
       }
 
@@ -239,7 +247,7 @@ class TwentyOneGame {
   }
 
   dealerTurn() {
-    this.dealer.hideCard = false;
+    this.dealer.unhideCard();
 
     while (!this.dealer.isBusted()) {
       this.showCards();
@@ -354,7 +362,6 @@ TwentyOneGame.MIN_NUM_OF_CARDS_NEEDED_TO_PLAY = 15;
 TwentyOneGame.CARDS_DEALT_AT_START = 2;
 TwentyOneGame.BUSTED_VALUE = 22;
 TwentyOneGame.SCORE_BELOW_WHICH_DEALER_MUST_HIT = 17;
-
 
 let game = new TwentyOneGame();
 game.start();
