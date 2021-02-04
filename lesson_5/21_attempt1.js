@@ -30,6 +30,12 @@ class Deck {
     this.discardedCards = [];
   }
 
+  static SUITS = ['Spades', 'Clovers', 'Hearts', 'Diamonds'];
+
+  static VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+
+  static FACE_CARDS = ['Jack', 'Queen', 'King'];
+
   shuffle() {
     let unshuffled = this.availableCards.slice();
     let shuffled = [];
@@ -64,10 +70,6 @@ class Deck {
     return Math.floor(Math.random() * numOfChoices);
   }
 }
-
-Deck.SUITS = ['Spades', 'Clovers', 'Hearts', 'Diamonds'];
-Deck.VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-Deck.FACE_CARDS = ['Jack', 'Queen', 'King'];
 
 class Participant {
   constructor() {
@@ -116,6 +118,8 @@ class Dealer extends Participant {
     this.keepOneCardFaceDown = true;
   }
 
+  static SCORE_BELOW_WHICH_DEALER_MUST_HIT = 17;
+
   hideCard() {
     this.keepOneCardFaceDown = true;
   }
@@ -138,7 +142,7 @@ class Dealer extends Participant {
   }
 
   hit() {
-    return this.getScore() < TwentyOneGame.SCORE_BELOW_WHICH_DEALER_MUST_HIT;
+    return this.getScore() < Dealer.SCORE_BELOW_WHICH_DEALER_MUST_HIT;
   }
 }
 
@@ -148,6 +152,20 @@ class TwentyOneGame {
     this.dealer = new Dealer();
     this.deck = null;
   }
+
+  static STARTING_BALANCE = 5;
+
+  static MAX_BALANCE = 10;
+
+  static MIN_BALANCE = 0;
+
+  static NAME_OF_GAME = 'Twenty-One';
+
+  static MIN_NUM_OF_CARDS_NEEDED_TO_PLAY = 15;
+
+  static CARDS_DEALT_AT_START = 2;
+
+  static BUSTED_VALUE = 22;
 
   start() {
     this.displayWelcomeMessage();
@@ -274,7 +292,8 @@ class TwentyOneGame {
   }
 
   displayWelcomeMessage() {
-    console.log(`Welcome to ${TwentyOneGame.NAME_OF_GAME}!\n`);
+    console.log(`Welcome to ${TwentyOneGame.NAME_OF_GAME}!`);
+    console.log(`The first player to win ${TwentyOneGame.MAX_BALANCE} wins the game!\n`);
   }
 
   displayGoodbyeMessage() {
@@ -288,9 +307,9 @@ class TwentyOneGame {
       console.log('Oh no... you busted!');
     } else if (this.dealer.isBusted()) {
       console.log('The dealer busted!');
-    } else if (this.playerWins()) {
+    } else if (this.playerWinsRound()) {
       console.log('You win!');
-    } else if (this.dealerWins()) {
+    } else if (this.dealerWinsRound()) {
       console.log('You lose this one. Better luck next time.');
     } else {
       console.log("It's a tie.");
@@ -310,13 +329,14 @@ class TwentyOneGame {
     }
   }
 
-  playerWins() {
-    return ((!this.player.isBusted() && this.dealer.isBusted())) ||
-           (!this.player.isBusted() &&
-            (this.player.getScore() > this.dealer.getScore()));
+  playerWinsRound() {
+    if (this.player.isBusted()) return false;
+
+    return this.dealer.isBusted() ||
+          (this.player.getScore() > this.dealer.getScore());
   }
 
-  dealerWins() {
+  dealerWinsRound() {
     return (this.player.isBusted()) ||
            (!this.dealer.isBusted() &&
             (this.dealer.getScore() > this.player.getScore()));
@@ -332,11 +352,11 @@ class TwentyOneGame {
 
 
   updateBalance() {
-    if (this.playerWins()) {
+    if (this.playerWinsRound()) {
       this.player.balance += 1;
     }
 
-    if (this.dealerWins()) {
+    if (this.dealerWinsRound()) {
       this.player.balance -= 1;
     }
   }
@@ -353,15 +373,6 @@ class TwentyOneGame {
     return answer === 'y';
   }
 }
-
-TwentyOneGame.STARTING_BALANCE = 5;
-TwentyOneGame.MAX_BALANCE = 10;
-TwentyOneGame.MIN_BALANCE = 0;
-TwentyOneGame.NAME_OF_GAME = 'Twenty-One';
-TwentyOneGame.MIN_NUM_OF_CARDS_NEEDED_TO_PLAY = 15;
-TwentyOneGame.CARDS_DEALT_AT_START = 2;
-TwentyOneGame.BUSTED_VALUE = 22;
-TwentyOneGame.SCORE_BELOW_WHICH_DEALER_MUST_HIT = 17;
 
 let game = new TwentyOneGame();
 game.start();
